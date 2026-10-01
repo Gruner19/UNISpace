@@ -19,9 +19,13 @@ O **UNISpace** é a ideia de uma plataforma única, acessível pela web, onde qu
 
 O sistema é uma **aplicação web cliente-servidor**: o frontend oferece a agenda e os painéis de gestão, o backend concentra as regras de negócio (validação anti-conflito, cotas e autenticação) e o banco de dados armazena usuários, espaços, reservas, bloqueios e auditoria. O ponto crítico é a **consistência da agenda**: validar e gravar a reserva de forma atômica, para que duas solicitações simultâneas do mesmo horário nunca sejam ambas confirmadas.
 
+---
+
 ## Link para o quadro Kanban
 
 * <https://github.com/users/Gruner19/projects/3/views/1>
+
+---
 
 ## Integrantes del Grupo
 
