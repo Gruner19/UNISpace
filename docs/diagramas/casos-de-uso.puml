@@ -1,0 +1,48 @@
+@startuml UNISpace_Casos_de_Uso
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Estudante" as EST
+actor "Docente" as DOC
+actor "Administrador" as ADM
+
+rectangle "UNISpace" {
+  usecase "Entrar no sistema" as UC1
+  usecase "Consultar disponibilidade" as UC2
+  usecase "Reservar espaço" as UC3
+  usecase "Cancelar reserva" as UC4
+  usecase "Ver histórico de reservas" as UC5
+  usecase "Validar conflito de horário" as UC6
+  usecase "Aplicar regras de equidade" as UC7
+  usecase "Receber notificações" as UC8
+  usecase "Cadastrar espaços" as UC9
+  usecase "Bloquear espaço" as UC10
+  usecase "Definir cotas de uso" as UC11
+  usecase "Gerar relatórios de uso" as UC12
+}
+
+EST --> UC1
+EST --> UC2
+EST --> UC3
+EST --> UC4
+EST --> UC5
+EST --> UC8
+
+DOC --> UC1
+DOC --> UC2
+DOC --> UC3
+DOC --> UC4
+DOC --> UC5
+
+ADM --> UC1
+ADM --> UC9
+ADM --> UC10
+ADM --> UC11
+ADM --> UC12
+
+UC3 ..> UC6 : <<include>>
+UC3 ..> UC7 : <<include>>
+UC3 ..> UC1 : <<include>>
+UC4 ..> UC1 : <<include>>
+UC8 ..> UC3 : <<extend>>
+@enduml
