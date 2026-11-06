@@ -20,9 +20,13 @@ O **UNISpace** é a ideia de uma plataforma única, acessível pela web, onde qu
 ```
 UNISpace/
 ├── docs/
-│   ├── requisitos/      # histórias de usuário, regras de negócio e glossário
-│   └── diagramas/       # diagramas UML (casos de uso)
-├── src/                 # código-fonte do sistema
+│   ├── requisitos/             # histórias de usuário, regras de negócio e glossário
+│   ├── diagramas/              # diagramas UML (casos de uso)
+│   ├── casos-de-uso/           # especificações detalhadas dos casos de uso (CU-02, CU-03)
+│   ├── img/                    # capturas de tela do sistema em funcionamento
+│   ├── interfaces.md           # catálogo descritivo de telas (Entrega 3)
+│   └── planejamento-sprints.md # equipe, papéis, calendário, milestones e backlog
+├── src/                        # código-fonte do sistema
 ├── README.md
 └── CONTRIBUTING.md
 ```
