@@ -11,6 +11,7 @@ Plataforma web centralizada para gestão e reserva equitativa dos espaços compa
 | **Fabricio Rodriguez Benitez** | Product Owner (PO) | Definição de escopo, priorização do backlog do produto e validação dos critérios de aceite. |
 | **Grunner Sánchez Morales** | Scrum Master (SM) | Facilitação das cerimônias ágeis, remoção de impedimentos e acompanhamento do fluxo no GitHub Projects. |
 | **Jordan Rivaldo Correa García** | Desenvolvedor(a) | Engenharia de requisitos, lógica transacional core e validação de consistência. |
+| **Ryan Alessandro Lazaro Urtecho** | Desenvolvedor(a) |Especificação de casos de uso, definição de fluxos funcionais e prototipação das interfaces do sistema. |
 | **César Eduardo Paredes Torres** | Desenvolvedor(a) | Modelagem funcional, arquitetura backend e regras de domínio. |
 | **Tommy Rodriguez Zavaleta** | Desenvolvedor(a) | Lógica de consulta, modelagem de dados e interfaces de usuário. |
 
@@ -53,8 +54,8 @@ As Sprints 2, 3 e 4 têm seus objetivos e metas globais definidos na seção 2. 
 - **Sprint 2 (12/10 a 25/10):**
   - **T5:** Especificação do CU Consultar disponibilidade (Resp.: Jordan Correa — I3 | PR [#24](https://github.com/Gruner19/UNISpace/pull/24)).
   - **T6:** Especificação do CU Reservar ambiente (Resp.: Jordan Correa — I3 | PR [#25](https://github.com/Gruner19/UNISpace/pull/25)).
-  - **T7:** Especificação do CU Cancelar reserva (Resp.: Tommy Rodriguez — I4).
-  - **T8:** Especificação do CU Marcar ambiente em manutenção (Resp.: Tommy Rodriguez — I4).
+  - **T7:** Especificação do CU Cancelar reserva (Resp.: Ryan Lazaro — I4).
+  - **T8:** Especificação do CU Marcar ambiente em manutenção (Resp.: Ryan Lazaro — I4).
   - **T9:** Especificação do CU Aprovar reserva especial (Resp.: Grunner Sánchez — I5).
   - **T10:** Especificação do CU Gerar relatório de uso (Resp.: Grunner Sánchez — I5).
 
@@ -62,10 +63,10 @@ As Sprints 2, 3 e 4 têm seus objetivos e metas globais definidos na seção 2. 
   - **T14:** Requisitos não-funcionais (Resp.: Grunner Sánchez — I5).
   - **T15:** Diagrama de classes UML (Resp.: Jordan Correa — I3).
   - **T16:** Diagrama de sequência "Reservar ambiente" (Resp.: César Eduardo — I2).
-  - **T17:** Protótipo de telas do sistema (Resp.: Tommy Rodriguez — I4).
-  - **T11:** Revisão de consistência e rastreabilidade total (Resp.: Equipe / I6).
+  - **T17:** Protótipo de telas do sistema (Resp.: Ryan Lazaro — I4).
+  - **T11:** Revisão de consistência e rastreabilidade total (Resp.: Tommy Zavaleta / I6).
 
 - **Sprint 4 e Fechamento (09/11 a 28/11):**
-  - **T12:** Relatório técnico final consolidado.
-  - **T18:** Apresentação e ensaio da defesa do projeto.
+  - **T12:** Relatório técnico final consolidado (Resp.: Tommy Zavaleta / I6).
+  - **T18:** Apresentação e ensaio da defesa do projeto (Resp.: Tommy Zavaleta / I6).
   - **Fechamento:** Correções de QA, consolidação em `main` e publicação da tag `v1.0`.
