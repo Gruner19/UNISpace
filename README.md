@@ -20,9 +20,38 @@ O **UNISpace** é a ideia de uma plataforma única, acessível pela web, onde qu
 ```
 UNISpace/
 ├── docs/
-│   ├── requisitos/      # histórias de usuário, regras de negócio e glossário
-│   └── diagramas/       # diagramas UML (casos de uso)
-├── src/                 # código-fonte do sistema
+│   ├── requisitos/              # histórias de usuário, regras de negócio e glossário
+│   ├── diagramas/               # diagramas UML (casos de uso)
+│   └── api/                     # contrato/documentação da API
+├── src/
+│   ├── frontend/                # React + Vite
+│   │   ├── public/
+│   │   └── src/
+│   │       ├── assets/          # imagens, ícones e fontes
+│   │       ├── components/      # componentes reutilizáveis (common/ e layout/)
+│   │       ├── features/        # módulos de domínio (auth, spaces, reservations, admin)
+│   │       ├── hooks/           # hooks personalizados
+│   │       ├── services/        # chamadas à API
+│   │       ├── context/         # estado global (Context API)
+│   │       ├── pages/           # páginas/rotas
+│   │       ├── routes/          # configuração de rotas
+│   │       ├── styles/          # estilos globais
+│   │       └── utils/           # funções auxiliares
+│   └── backend/                 # Node.js + Express + Prisma
+│       ├── prisma/              # schema e migrações do banco
+│       ├── src/
+│       │   ├── config/          # configuração (env, db, server)
+│       │   ├── controllers/     # camada HTTP
+│       │   ├── routes/          # definição de endpoints
+│       │   ├── services/        # regras de negócio
+│       │   ├── repositories/    # acesso a dados
+│       │   ├── middlewares/     # auth, validação, erros
+│       │   ├── models/          # modelos/entidades
+│       │   ├── validators/      # validação de entrada
+│       │   └── utils/           # funções auxiliares
+│       └── tests/               # testes do backend
+├── .editorconfig
+├── .gitignore
 ├── README.md
 └── CONTRIBUTING.md
 ```
