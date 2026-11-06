@@ -15,6 +15,26 @@ O **UNISpace** é a ideia de uma plataforma única, acessível pela web, onde qu
 
 ---
 
+## Estrutura do repositório
+
+```
+UNISpace/
+├── docs/
+│   ├── requisitos/      # histórias de usuário, regras de negócio e glossário
+│   └── diagramas/       # diagramas UML (casos de uso)
+├── src/                 # código-fonte do sistema
+├── README.md
+└── CONTRIBUTING.md
+```
+
+## Fluxo de trabalho
+
+1. Cada tarefa do Kanban é feita em uma branch própria: `feature/<nome-da-tarefa>`.
+2. Nunca se faz commit direto em `main`.
+3. Ao terminar, abre-se um Pull Request e o revisor designado o revisa e aprova.
+4. Só depois da aprovação é feito o merge.
+5. Mensagens de commit curtas e claras, por exemplo: `docs: adiciona histórias de usuário de prioridade alta`.
+
 ## Descrição geral do sistema
 
 O sistema é uma **aplicação web cliente-servidor**: o frontend oferece a agenda e os painéis de gestão, o backend concentra as regras de negócio (validação anti-conflito, cotas e autenticação) e o banco de dados armazena usuários, espaços, reservas, bloqueios e auditoria. O ponto crítico é a **consistência da agenda**: validar e gravar a reserva de forma atômica, para que duas solicitações simultâneas do mesmo horário nunca sejam ambas confirmadas.
@@ -23,14 +43,14 @@ O sistema é uma **aplicação web cliente-servidor**: o frontend oferece a agen
 
 ## Link para o quadro Kanban
 
-* <https://github.com/users/Gruner19/projects/3/views/1>
+- [https://github.com/users/Gruner19/projects/3/views/1](https://github.com/users/Gruner19/projects/3/views/1)
 
 ---
 
 ## Integrantes del Grupo
 
-* César Eduardo Paredes Torres
-* Jordan Rivaldo Correa García 
-* Tommy Rodriguez Zavaleta
-* Grunner Sánchez Morales
-* Fabricio Rodriguez Benitez
+- César Eduardo Paredes Torres
+- Jordan Rivaldo Correa García
+- Tommy Rodriguez Zavaleta
+- Grunner Sánchez Morales
+- Fabricio Rodriguez Benitez
