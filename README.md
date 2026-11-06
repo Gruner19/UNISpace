@@ -58,3 +58,4 @@ O sistema é uma **aplicação web cliente-servidor**: o frontend oferece a agen
 - Tommy Rodriguez Zavaleta
 - Grunner Sánchez Morales
 - Fabricio Rodriguez Benitez
+- Ryan Alessandro Lazaro Urtecho
