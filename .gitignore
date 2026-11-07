@@ -17,6 +17,7 @@ out/
 
 # Prisma / Base de datos
 prisma/generated/
+src/database/generated/
 *.db
 *.sqlite
 
