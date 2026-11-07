@@ -19,14 +19,53 @@ O **UNISpace** é a ideia de uma plataforma única, acessível pela web, onde qu
 
 ```
 UNISpace/
+├── .github/
+│   ├── ISSUE_TEMPLATE/subissue-codigo.md
+│   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
-│   ├── requisitos/             # histórias de usuário, regras de negócio e glossário
-│   ├── diagramas/              # diagramas UML (casos de uso)
-│   ├── casos-de-uso/           # especificações detalhadas dos casos de uso (CU-02, CU-03)
-│   ├── img/                    # capturas de tela do sistema em funcionamento
-│   ├── interfaces.md           # catálogo descritivo de telas (Entrega 3)
-│   └── planejamento-sprints.md # equipe, papéis, calendário, milestones e backlog
-├── src/                        # código-fonte do sistema
+│   ├── arquitetura/
+│   │   └── adr-001-stack.md      # decisão de stack (P0.1)
+│   ├── casos-de-uso/             # especificações dos casos de uso
+│   ├── diagramas/                # casos de uso, classes e sequência
+│   ├── img/                      # imagens e protótipos das telas
+│   ├── requisitos/               # histórias de usuário, regras de negócio e glossário
+│   ├── testes/
+│   │   └── plano-aceitacao.md    # plano de aceitação (P3.1)
+│   ├── interfaces.md             # especificação das telas
+│   └── planejamento-sprints.md   # calendário, papéis e backlog
+├── src/
+│   ├── backend/                  # Node.js + Express
+│   │   ├── src/
+│   │   │   ├── config/           # configuração (env, db, server)
+│   │   │   ├── controllers/      # camada HTTP
+│   │   │   ├── routes/           # definição de endpoints
+│   │   │   ├── services/         # regras de negócio
+│   │   │   ├── repositories/     # acesso a dados
+│   │   │   ├── middlewares/      # auth, validação, erros
+│   │   │   ├── models/           # modelos/entidades
+│   │   │   ├── validators/       # validação de entrada
+│   │   │   └── utils/            # funções auxiliares
+│   │   ├── tests/                # testes do backend
+│   │   └── .env.example
+│   ├── frontend/                 # React + Vite
+│   │   ├── public/
+│   │   └── src/
+│   │       ├── assets/           # imagens, ícones e fontes
+│   │       ├── components/       # componentes reutilizáveis (common/ e layout/)
+│   │       ├── features/         # módulos de domínio (auth, spaces, reservations, admin)
+│   │       ├── hooks/            # hooks personalizados
+│   │       ├── services/         # chamadas à API
+│   │       ├── context/          # estado global (Context API)
+│   │       ├── pages/            # páginas/rotas
+│   │       ├── routes/           # configuração de rotas
+│   │       ├── styles/           # estilos globais
+│   │       └── utils/            # funções auxiliares
+│   └── database/                 # modelo, migrações e scripts do banco
+│       ├── modelo/               # schema do banco (Prisma)
+│       ├── migracoes/            # migrações versionadas
+│       └── scripts/              # seeds e scripts auxiliares
+├── .editorconfig
+├── .gitignore
 ├── README.md
 └── CONTRIBUTING.md
 ```
