@@ -1,0 +1,283 @@
+@startuml UNISpace_Diagrama_de_Classes
+title UNISpace — Diagrama de Classes de Domínio e Serviços (T15)
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+
+' ============================================================
+' PACOTE: ENUMERAÇÕES DE DOMÍNIO
+' ============================================================
+package "Enumerações (Domain Enums)" {
+  enum PerfilUsuario {
+    ESTUDANTE
+    DOCENTE
+    ADMINISTRADOR
+  }
+
+  enum TipoEspaco {
+    SALA_ESTUDO
+    LABORATORIO
+    AUDITORIO
+    AREA_ESPORTIVA
+  }
+
+  enum StatusReserva {
+    CONFIRMADA
+    CANCELADA_USUARIO
+    CANCELADA_ADMIN
+    CANCELADA_BLOQUEIO
+    CONCLUIDA
+    NO_SHOW
+    PENDENTE_APROVACAO
+  }
+
+  enum StatusBloqueio {
+    ATIVO
+    ENCERRADO
+    CANCELADO
+  }
+
+  enum TipoAcaoAuditoria {
+    CRIACAO_RESERVA
+    CANCELAMENTO_RESERVA
+    CRIACAO_BLOQUEIO
+    CANCELAMENTO_POR_BLOQUEIO
+    CADASTRO_ESPACO
+    EDICAO_ESPACO
+    DESATIVACAO_ESPACO
+    SORTEIO_PRIORIDADE
+  }
+}
+
+' ============================================================
+' PACOTE: ENTIDADES DE DOMÍNIO (MODEL)
+' ============================================================
+package "Entidades de Domínio (Models)" {
+
+  class Faculdade {
+    - id : UUID
+    - sigla : String
+    - nome : String
+    - criadoEm : DateTime
+    + listarCursos() : List<Curso>
+  }
+
+  class Curso {
+    - id : UUID
+    - codigo : String
+    - nome : String
+    - faculdadeId : UUID
+    - criadoEm : DateTime
+    + calcularHorasSemanais(espacoId : UUID, semana : Date) : Decimal
+  }
+
+  class Usuario {
+    - id : UUID
+    - nome : String
+    - emailInstitucional : String
+    - senhaHash : String
+    - perfil : PerfilUsuario
+    - cursoId : UUID
+    - cotaSemanalMaximaHoras : Decimal = 6.0
+    - maxReservasAtivas : Integer = 2
+    - noShowsUltimos30Dias : Integer = 0
+    - suspensoAte : DateTime
+    - receberNotificacoes : Boolean = true
+    - ativo : Boolean = true
+    - criadoEm : DateTime
+    + possuiEmailInstitucionalValido() : Boolean
+    + estaSuspenso(dataReferencia : DateTime) : Boolean
+    + obterSaldoCotaSemanal(semana : Date) : Decimal
+    + contarReservasAtivasFuturas() : Integer
+    + podeCancelarReserva(reserva : Reserva) : Boolean
+  }
+
+  class GrupoPesquisa {
+    - id : UUID
+    - nome : String
+    - sigla : String
+    - descricao : String
+    - docenteLiderId : UUID
+    - cursoId : UUID
+    - ativo : Boolean = true
+    - criadoEm : DateTime
+    + validarMembro(usuarioId : UUID) : Boolean
+  }
+
+  class Espaco {
+    - id : UUID
+    - codigo : String
+    - nome : String
+    - tipo : TipoEspaco
+    - capacidade : Integer
+    - localizacao : String
+    - predio : String
+    - recursos : List<String>
+    - duracaoMinimaMinutos : Integer
+    - duracaoMaximaMinutos : Integer
+    - blocoMinutos : Integer
+    - cotaCursoPercentualMax : Decimal = 40.0
+    - horarioNobreInicio : Time
+    - horarioNobreFim : Time
+    - ativo : Boolean = true
+    - criadoEm : DateTime
+    + estaDisponivel(data : Date, inicio : Time, fim : Time) : Boolean
+    + validarDuracao(duracaoMinutos : Integer) : Boolean
+    + validarCapacidade(participantes : Integer) : Boolean
+    + desativar() : void
+  }
+
+  class Reserva {
+    - id : UUID
+    - codigoConfirmacao : String
+    - espacoId : UUID
+    - usuarioId : UUID
+    - grupoPesquisaId : UUID
+    - data : Date
+    - horarioInicio : Time
+    - horarioFim : Time
+    - duracaoMinutos : Integer
+    - numeroParticipantes : Integer
+    - finalidade : String
+    - status : StatusReserva
+    - contabilizaCota : Boolean = true
+    - canceladaEm : DateTime
+    - motivoCancelamento : String
+    - criadoEm : DateTime
+    + conflitaCom(data : Date, inicio : Time, fim : Time) : Boolean
+    + estaDentroPrazoCancelamentoSemPenalidade(agora : DateTime) : Boolean
+    + cancelarPeloUsuario(agora : DateTime, motivo : String) : void
+    + cancelarPorBloqueio(bloqueio : Bloqueio) : void
+    + registrarNoShow() : void
+  }
+
+  class Bloqueio {
+    - id : UUID
+    - espacoId : UUID
+    - administradorId : UUID
+    - dataInicio : Date
+    - dataFim : Date
+    - horarioInicio : Time
+    - horarioFim : Time
+    - motivo : String
+    - status : StatusBloqueio
+    - criadoEm : DateTime
+    + conflitaCom(data : Date, inicio : Time, fim : Time) : Boolean
+    + encerrar() : void
+  }
+
+  class PrioridadeRotativa {
+    - id : UUID
+    - espacoId : UUID
+    - cursoPrioritarioId : UUID
+    - semanaReferencia : Date
+    - horasUsadasSemanaAnterior : Decimal
+    - janelaExclusivaInicio : DateTime
+    - janelaExclusivaFim : DateTime
+    - desempatePorSorteio : Boolean = false
+    - criadoEm : DateTime
+    + estaEmJanelaExclusiva(agora : DateTime) : Boolean
+    + permiteReservaParaCurso(cursoId : UUID, agora : DateTime, horarioNobre : Boolean) : Boolean
+  }
+
+  class RegistroAuditoria {
+    - id : UUID
+    - usuarioId : UUID
+    - reservaId : UUID
+    - bloqueioId : UUID
+    - acao : TipoAcaoAuditoria
+    - detalhes : JSON
+    - ipSolicitante : String
+    - dataHora : DateTime
+  }
+
+  class Notificacao {
+    - id : UUID
+    - usuarioId : UUID
+    - reservaId : UUID
+    - bloqueioId : UUID
+    - destinatarioEmail : String
+    - assunto : String
+    - corpo : String
+    - enviada : Boolean = false
+    - enviadaEm : DateTime
+    - agendadaPara : DateTime
+  }
+}
+
+' ============================================================
+' PACOTE: CAMADA DE SERVIÇOS (BACKEND APPLICATION LAYER)
+' ============================================================
+package "Camada de Serviços (Application Services)" {
+
+  class DisponibilidadeService {
+    + consultarAgenda(filtros : FiltroDisponibilidadeDTO) : List<SlotDisponibilidadeDTO>
+    + sugerirHorariosProximos(espacoId : UUID, data : Date, duracao : Integer) : List<SlotDisponibilidadeDTO>
+  }
+
+  class ReservaService {
+    + criarReservaAtomica(dados : CriarReservaDTO, usuario : Usuario) : Reserva
+    + cancelarReserva(reservaId : UUID, solicitante : Usuario, motivo : String) : Reserva
+    + listarHistoricoUsuario(usuarioId : UUID) : List<Reserva>
+  }
+
+  class EquidadeService {
+    + validarCotaUsuario(usuarioId : UUID, semana : Date, duracaoHoras : Decimal) : Boolean
+    + validarCotaCursoEspaco(cursoId : UUID, espacoId : UUID, semana : Date, duracaoHoras : Decimal) : Boolean
+    + calcularPrioridadeSemanal(espacoId : UUID, semana : Date) : PrioridadeRotativa
+  }
+
+  class BloqueioService {
+    + criarBloqueioAdministrativo(dados : CriarBloqueioDTO, admin : Usuario) : Bloqueio
+    + cancelarReservasAfetadas(bloqueio : Bloqueio) : List<Reserva>
+  }
+
+  class AuditoriaService {
+    + registrarEvento(acao : TipoAcaoAuditoria, usuarioId : UUID, refId : UUID, ip : String, detalhes : JSON) : RegistroAuditoria
+  }
+
+  class RelatorioService {
+    + gerarRelatorioUso(periodoInicio : Date, periodoFim : Date, filtros : FiltroRelatorioDTO) : RelatorioUsoDTO
+  }
+}
+
+' ============================================================
+' RELACIONAMENTOS E MULTIPLICIDADES
+' ============================================================
+Faculdade "1" *-- "1..*" Curso : possui >
+Curso "1" -- "0..*" Usuario : vincula >
+Curso "1" -- "0..*" GrupoPesquisa : pertence a <
+Usuario "1" -- "0..*" GrupoPesquisa : lidera (Docente) >
+
+Usuario "1" -- "0..*" Reserva : realiza >
+GrupoPesquisa "0..1" -- "0..*" Reserva : associada a <
+Espaco "1" -- "0..*" Reserva : aloca >
+
+Espaco "1" -- "0..*" Bloqueio : sofre >
+Usuario "1" -- "0..*" Bloqueio : aplica (Admin) >
+
+Espaco "1" -- "0..*" PrioridadeRotativa : possui escala >
+Curso "1" -- "0..*" PrioridadeRotativa : detém prioridade <
+
+Usuario "1" -- "0..*" RegistroAuditoria : origina >
+Reserva "0..1" -- "0..*" RegistroAuditoria : auditada em >
+Bloqueio "0..1" -- "0..*" RegistroAuditoria : auditado em >
+
+Usuario "1" -- "0..*" Notificacao : recebe >
+Reserva "0..1" -- "0..*" Notificacao : dispara >
+Bloqueio "0..1" -- "0..*" Notificacao : origina aviso >
+
+Usuario ..> PerfilUsuario
+Espaco ..> TipoEspaco
+Reserva ..> StatusReserva
+Bloqueio ..> StatusBloqueio
+RegistroAuditoria ..> TipoAcaoAuditoria
+
+ReservaService ..> EquidadeService : valida RN-03/RN-04 >
+ReservaService ..> AuditoriaService : registra RN-13 >
+BloqueioService ..> ReservaService : cancela conflitantes (RN-06/RN-07) >
+BloqueioService ..> AuditoriaService : registra RN-13 >
+DisponibilidadeService ..> Espaco : consulta >
+
+@enduml
