@@ -14,6 +14,20 @@ function criarServidorReserva(dadosSeed = {}) {
   const controller = new ReservaController(service);
 
   const server = http.createServer((req, res) => {
+    if (req.method === 'GET' && (req.url === '/health' || req.url === '/api/v1/health')) {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(
+        JSON.stringify({
+          sucesso: true,
+          status: 'ok',
+          servico: 'unispace-backend',
+          espacosCarregados: repository.espacos.size,
+          dataHora: new Date().toISOString()
+        })
+      );
+      return;
+    }
+
     if (req.method === 'POST' && req.url === '/api/v1/reservas') {
       let rawBody = '';
       req.on('data', (chunk) => {
