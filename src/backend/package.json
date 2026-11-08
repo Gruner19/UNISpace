@@ -1,0 +1,13 @@
+{
+  "name": "unispace-backend",
+  "version": "1.0.0",
+  "description": "Backend transacional do UNISpace — Gestão e reserva de espaços universitários",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test tests/reserva.unit.test.js tests/reserva.integration.test.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
