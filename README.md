@@ -70,6 +70,62 @@ UNISpace/
 └── CONTRIBUTING.md
 ```
 
+## Como executar
+
+### Estado atual
+
+- **Backend (T6.1/T6.2):** API HTTP em Node.js com repositório em memória e transação atômica anti-conflito.
+- **Frontend:** estrutura criada, ainda sem código ou `package.json`.
+- **Banco:** migração PostgreSQL em `src/database/migracoes/`; necessária apenas para validar a T6.1 no banco, não para o modo local em memória.
+
+### Pré-requisitos
+
+- Node.js >= 18 (testado com Node 26).
+
+### Backend
+
+```bash
+cd src/backend
+npm test
+npm start
+```
+
+O código atual não usa dependências externas; `npm install` só é necessário se novas bibliotecas forem adicionadas.
+
+Opcionalmente, crie o `.env` a partir do exemplo:
+
+```bash
+copy .env.example .env   # Windows
+cp .env.example .env     # Linux/macOS
+```
+
+No estado atual, apenas `HOST` e `PORT` são usados; `DATABASE_URL`, JWT e CORS ficam reservados para as próximas sub-issues.
+
+### Verificar a API
+
+```bash
+curl http://localhost:3000/health
+```
+
+### Criar uma reserva de teste
+
+```bash
+curl -X POST http://localhost:3000/api/v1/reservas \
+  -H "Content-Type: application/json" \
+  -H "x-usuario-id: user-demo-1" \
+  -H "x-usuario-email: demo@aluno.ufop.edu.br" \
+  -d "{\"espacoId\":\"espaco-lab-01\",\"data\":\"2026-12-01\",\"horarioInicio\":\"14:00\",\"horarioFim\":\"16:00\",\"numeroParticipantes\":15,\"finalidade\":\"Estudo em grupo de ESII\"}"
+```
+
+Espaços do seed: `espaco-lab-01`, `espaco-sala-01`, `espaco-aud-01`, `espaco-quadra-01`.
+
+### Banco de dados (opcional, requer PostgreSQL 15+)
+
+```bash
+psql "$DATABASE_URL" -f src/database/migracoes/001_t6_1_restricao_anti_sobreposicao_e_auditoria.sql
+psql "$DATABASE_URL" -f src/database/scripts/testar_concorrencia_e_sobreposicao.sql
+```
+
 ## Fluxo de trabalho
 
 1. Cada tarefa do Kanban é feita em uma branch própria: `feature/<nome-da-tarefa>`.
