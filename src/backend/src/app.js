@@ -4,14 +4,21 @@ const http = require('node:http');
 const { ReservaRepository } = require('./repositories/reservaRepository');
 const { ReservaService } = require('./services/reservaService');
 const { ReservaController } = require('./controllers/reservaController');
+const { EspacoRepository } = require('./repositories/espacoRepository');
+const { EspacoService } = require('./services/espacoService');
+const { EspacoController } = require('./controllers/espacoController');
 
 /**
- * Cria o servidor HTTP da API do UNISpace com o módulo de reservas configurado.
+ * Cria o servidor HTTP da API do UNISpace com os módulos de reservas e espaços configurados.
  */
 function criarServidorReserva(dadosSeed = {}) {
-  const repository = new ReservaRepository(dadosSeed);
-  const service = new ReservaService(repository);
-  const controller = new ReservaController(service);
+  const reservaRepository = new ReservaRepository(dadosSeed);
+  const reservaService = new ReservaService(reservaRepository);
+  const reservaController = new ReservaController(reservaService);
+
+  const espacoRepository = new EspacoRepository(dadosSeed);
+  const espacoService = new EspacoService(espacoRepository);
+  const espacoController = new EspacoController(espacoService);
 
   const server = http.createServer((req, res) => {
     if (req.method === 'GET' && (req.url === '/health' || req.url === '/api/v1/health')) {
@@ -21,7 +28,7 @@ function criarServidorReserva(dadosSeed = {}) {
           sucesso: true,
           status: 'ok',
           servico: 'unispace-backend',
-          espacosCarregados: repository.espacos.size,
+          espacosCarregados: reservaRepository.espacos.size,
           dataHora: new Date().toISOString()
         })
       );
@@ -46,8 +53,13 @@ function criarServidorReserva(dadosSeed = {}) {
           );
           return;
         }
-        await controller.criarReserva(req, res);
+        await reservaController.criarReserva(req, res);
       });
+      return;
+    }
+
+    if (req.method === 'GET' && req.url === '/api/v1/espacos') {
+      espacoController.listarEspacos(req, res);
       return;
     }
 
@@ -55,7 +67,7 @@ function criarServidorReserva(dadosSeed = {}) {
     res.end(JSON.stringify({ sucesso: false, erro: { codigo: 'ROTA_NAO_ENCONTRADA' } }));
   });
 
-  return { server, repository, service, controller };
+  return { server, reservaRepository, reservaService, reservaController, espacoRepository, espacoService, espacoController };
 }
 
 module.exports = { criarServidorReserva };
