@@ -1,5 +1,7 @@
 'use strict';
 
+const { gerarHashSenha } = require('../utils/senhaUtil');
+
 /**
  * Dados iniciais do modo de execução local.
  * O repositório atual é em memória; estes registros permitem testar a API
@@ -65,13 +67,17 @@ const SEED_PADRAO = {
       id: 'user-demo-1',
       nome: 'Estudante Demonstração',
       emailInstitucional: 'demo@aluno.ufop.edu.br',
-      perfil: 'ESTUDANTE'
+      senhaHash: gerarHashSenha('SenhaSegura123!'),
+      perfil: 'ESTUDANTE',
+      ativo: true
     },
     {
       id: 'user-admin-1',
       nome: 'Administrador UNISpace',
       emailInstitucional: 'admin@ufop.edu.br',
-      perfil: 'ADMINISTRADOR'
+      senhaHash: gerarHashSenha('AdminSeguro123!'),
+      perfil: 'ADMINISTRADOR',
+      ativo: true
     }
   ],
   reservas: [],

@@ -7,7 +7,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "build": "node scripts/verificar-sintaxe.js",
-    "test": "node --test tests/reserva.unit.test.js tests/reserva.integration.test.js"
+    "test": "node --test tests/reserva.unit.test.js tests/reserva.integration.test.js tests/auth.unit.test.js tests/auth.integration.test.js"
   },
   "engines": {
     "node": ">=18.0.0"
