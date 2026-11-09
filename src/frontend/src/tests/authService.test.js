@@ -83,12 +83,12 @@ describe('validarSenha', () => {
     expect(validarSenha('').valido).toBe(false);
   });
 
-  it('retorna inválido para senha com menos de 5 caracteres', () => {
-    expect(validarSenha('ab').valido).toBe(false);
+  it('retorna inválido para senha com menos de 6 caracteres', () => {
+    expect(validarSenha('abcde').valido).toBe(false);
   });
 
-  it('aceita senha com 5 caracteres', () => {
-    expect(validarSenha('abcde').valido).toBe(true);
+  it('aceita senha com 6 caracteres', () => {
+    expect(validarSenha('abc123').valido).toBe(true);
   });
 
   it('aceita senha longa', () => {

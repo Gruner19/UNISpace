@@ -72,8 +72,8 @@ export function validarSenha(senha) {
   if (!senha) {
     return { valido: false, mensagem: 'A senha é obrigatória.' };
   }
-  if (senha.length < 5) {
-    return { valido: false, mensagem: 'A senha deve ter pelo menos 5 caracteres.' };
+  if (senha.length < 6) {
+    return { valido: false, mensagem: 'A senha deve ter pelo menos 6 caracteres.' };
   }
   return { valido: true };
 }
