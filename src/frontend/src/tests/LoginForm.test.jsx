@@ -1,17 +1,8 @@
 /**
  * LoginForm.test.jsx — Testes de integração do formulário de login (P1.3)
- *
- * Cobre:
- *   - Renderização dos campos e botão
- *   - Validação de campo obrigatório (email e senha)
- *   - Validação de domínio institucional em tempo real
- *   - Exibição de erro para credenciais inválidas
- *   - Redirecionamento após login bem-sucedido
- *   - Toggle de visibilidade da senha
- *   - Acessibilidade básica (labels, aria-invalid)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
@@ -64,9 +55,9 @@ function renderLogin(entradaInicial = '/login') {
 describe('LoginPage — renderização', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('exibe o título da marca UNISpace', () => {
+  it('exibe o título da marca UNIspace', () => {
     renderLogin();
-    expect(screen.getByText('UNISpace')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Bem-vindo ao UNIspace/i })).toBeInTheDocument();
   });
 
   it('exibe o campo de e-mail institucional', () => {
@@ -76,7 +67,7 @@ describe('LoginPage — renderização', () => {
 
   it('exibe o campo de senha', () => {
     renderLogin();
-    expect(screen.getByLabelText(/senha/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^senha/i)).toBeInTheDocument();
   });
 
   it('exibe o botão de entrar', () => {
@@ -111,7 +102,7 @@ describe('LoginForm — validação de campos', () => {
     await user.type(emailInput, 'usuario@gmail.com');
     await user.tab();
     await waitFor(() => {
-      expect(screen.getByText(/e-mail institucional/i)).toBeInTheDocument();
+      expect(screen.getByText(/Use o seu e-mail institucional/i)).toBeInTheDocument();
     });
   });
 
@@ -122,7 +113,7 @@ describe('LoginForm — validação de campos', () => {
     await user.type(emailInput, 'demo@aluno.ufop.edu.br');
     await user.tab();
     await waitFor(() => {
-      expect(screen.queryByText(/domínio/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Use o seu e-mail institucional/i)).not.toBeInTheDocument();
     });
   });
 
@@ -144,7 +135,7 @@ describe('LoginForm — validação de campos', () => {
     await user.type(senhaInput, '123');
     await user.tab();
     await waitFor(() => {
-      expect(screen.getByText(/pelo menos 5 caracteres/i)).toBeInTheDocument();
+      expect(screen.getByText(/pelo menos 6 caracteres/i)).toBeInTheDocument();
     });
   });
 
