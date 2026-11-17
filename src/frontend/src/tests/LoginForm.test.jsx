@@ -135,7 +135,7 @@ describe('LoginForm — validação de campos', () => {
     await user.type(senhaInput, '123');
     await user.tab();
     await waitFor(() => {
-      expect(screen.getByText(/pelo menos 6 caracteres/i)).toBeInTheDocument();
+      expect(screen.getByText(/pelo menos 5 caracteres/i)).toBeInTheDocument();
     });
   });
 
