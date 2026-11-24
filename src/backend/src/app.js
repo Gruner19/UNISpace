@@ -4,6 +4,9 @@ const http = require('node:http');
 const { ReservaRepository } = require('./repositories/reservaRepository');
 const { ReservaService } = require('./services/reservaService');
 const { ReservaController } = require('./controllers/reservaController');
+const { DisponibilidadeRepository } = require('./repositories/disponibilidadeRepository');
+const { DisponibilidadeService } = require('./services/disponibilidadeService');
+const { DisponibilidadeController } = require('./controllers/disponibilidadeController');
 const { UsuarioRepository } = require('./repositories/usuarioRepository');
 const { AuthService } = require('./services/authService');
 const { AuthController } = require('./controllers/authController');
@@ -54,6 +57,11 @@ function criarServidorReserva(dadosSeed = {}) {
   const service = new ReservaService(repository);
   const controller = new ReservaController(service);
 
+  // T5.1: consulta de disponibilidade compartilha o mesmo armazenamento de reservas/bloqueios
+  const disponibilidadeRepository = new DisponibilidadeRepository(repository);
+  const disponibilidadeService = new DisponibilidadeService(disponibilidadeRepository);
+  const disponibilidadeController = new DisponibilidadeController(disponibilidadeService);
+
   const usuarioRepository = new UsuarioRepository(dadosSeed.usuarios || []);
   const authService = new AuthService(usuarioRepository);
   const authController = new AuthController(authService);
@@ -72,6 +80,19 @@ function criarServidorReserva(dadosSeed = {}) {
         })
       );
       return;
+    }
+
+    // T5.1: GET /api/v1/espacos/disponibilidade (consulta pública; token é opcional)
+    if (req.method === 'GET') {
+      const url = new URL(req.url, 'http://localhost');
+      if (url.pathname === '/api/v1/espacos/disponibilidade') {
+        (async () => {
+          req.query = Object.fromEntries(url.searchParams.entries());
+          identificarUsuarioOpcional(req);
+          await disponibilidadeController.consultarDisponibilidade(req, res);
+        })();
+        return;
+      }
     }
 
     // POST /api/v1/auth/login
@@ -184,6 +205,9 @@ function criarServidorReserva(dadosSeed = {}) {
     repository,
     service,
     controller,
+    disponibilidadeRepository,
+    disponibilidadeService,
+    disponibilidadeController,
     usuarioRepository,
     authService,
     authController

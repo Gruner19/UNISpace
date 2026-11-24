@@ -30,6 +30,24 @@ const REGRAS_NEGOCIO = Object.freeze({
     LABORATORIO: Object.freeze({ minMinutos: 30, maxMinutos: 180, blocoMinutos: 30 }),
     AUDITORIO: Object.freeze({ minMinutos: 60, maxMinutos: 240, blocoMinutos: 60 }),
     AREA_ESPORTIVA: Object.freeze({ minMinutos: 60, maxMinutos: 120, blocoMinutos: 60 })
+  }),
+
+  // T5.1 / CU-02: parâmetros da consulta de disponibilidade
+  HORARIO_ABERTURA_CAMPUS: '07:00',
+  HORARIO_FECHAMENTO_CAMPUS: '22:00',
+  INTERVALO_SLOT_DISPONIBILIDADE_MINUTOS: 30,
+  MAX_DIAS_CONSULTA_DISPONIBILIDADE: 7,
+  TIPOS_ESPACO: Object.freeze([
+    'SALA_ESTUDO',
+    'LABORATORIO',
+    'AUDITORIO',
+    'AREA_ESPORTIVA'
+  ]),
+  TURNOS_DISPONIBILIDADE: Object.freeze({
+    MANHA: Object.freeze({ inicio: '07:00', fim: '12:00' }),
+    TARDE: Object.freeze({ inicio: '12:00', fim: '18:00' }),
+    NOITE: Object.freeze({ inicio: '18:00', fim: '22:00' }),
+    INTEGRAL: Object.freeze({ inicio: '07:00', fim: '22:00' })
   })
 });
 

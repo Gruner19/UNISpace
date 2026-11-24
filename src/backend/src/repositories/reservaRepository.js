@@ -70,7 +70,7 @@ class ReservaRepository {
 
     try {
       const resultado = await operacaoTransacional({
-        buscarEspacoPorId: (id) => this.espacos.get(id) || null,
+        buscarEspacoPorId: (id) => this.buscarEspacoPorId(id),
         buscarUsuarioPorId: (id) => this.usuarios.get(id) || null,
         // T9.1: consultas de reserva dentro da transação (leitura consistente com o snapshot)
         buscarReservaPorId: (id) => this.reservas.get(id) || null,
@@ -82,17 +82,9 @@ class ReservaRepository {
           return { ...atualizada };
         },
         listarReservasConfirmadasEspacoData: (idEspaco, data) =>
-          Array.from(this.reservas.values()).filter(
-            (r) => r.espacoId === idEspaco && r.data === data && r.status === 'CONFIRMADA'
-          ),
+          this.listarReservasConfirmadasEspacoData(idEspaco, data),
         listarBloqueiosAtivosEspacoData: (idEspaco, data) =>
-          this.bloqueios.filter(
-            (b) =>
-              b.espacoId === idEspaco &&
-              b.status === 'ATIVO' &&
-              b.dataInicio <= data &&
-              b.dataFim >= data
-          ),
+          this.listarBloqueiosAtivosEspacoData(idEspaco, data),
         listarReservasContabilizadasUsuario: (usuarioId) =>
           Array.from(this.reservas.values()).filter(
             (r) =>
@@ -149,6 +141,55 @@ class ReservaRepository {
     } finally {
       liberarLock();
     }
+  }
+
+  /**
+   * Busca um espaço pelo ID (fora de transação; leitura para consulta de disponibilidade).
+   * @param {string} id
+   * @returns {object|null}
+   */
+  buscarEspacoPorId(id) {
+    if (!id) return null;
+    return this.espacos.get(id) || null;
+  }
+
+  /**
+   * Lista os espaços ativos do catálogo (RN-12).
+   * @returns {Array<object>}
+   */
+  listarEspacosAtivos() {
+    return Array.from(this.espacos.values()).filter((espaco) => espaco.ativo === true);
+  }
+
+  /**
+   * Lista as reservas CONFIRMADAS de um espaço em uma data (RN-01).
+   * @param {string} espacoId
+   * @param {string} data - Formato 'YYYY-MM-DD'
+   * @returns {Array<object>}
+   */
+  listarReservasConfirmadasEspacoData(espacoId, data) {
+    return Array.from(this.reservas.values()).filter(
+      (reserva) =>
+        reserva.espacoId === espacoId &&
+        reserva.data === data &&
+        reserva.status === 'CONFIRMADA'
+    );
+  }
+
+  /**
+   * Lista os bloqueios ATIVOS que abrangem uma data (RN-06).
+   * @param {string} espacoId
+   * @param {string} data - Formato 'YYYY-MM-DD'
+   * @returns {Array<object>}
+   */
+  listarBloqueiosAtivosEspacoData(espacoId, data) {
+    return this.bloqueios.filter(
+      (bloqueio) =>
+        bloqueio.espacoId === espacoId &&
+        bloqueio.status === 'ATIVO' &&
+        bloqueio.dataInicio <= data &&
+        bloqueio.dataFim >= data
+    );
   }
 
   /**
