@@ -10,6 +10,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { RutaProtegida } from './RutaProtegida';
 import { LoginPage } from '../pages/LoginPage';
 import { AgendaPage } from '../pages/AgendaPage';
+import { MinhasReservas } from '../pages/MinhasReservas';
 
 export function AppRoutes() {
   return (
@@ -29,6 +30,9 @@ export function AppRoutes() {
           </RutaProtegida>
         }
       />
+
+      {/* Fallback para rotas não encontradas */}
+      <Route path="/minhas-reservas" element={<MinhasReservas />} />
 
       {/* Fallback para rotas não encontradas */}
       <Route path="*" element={<Navigate to="/agenda" replace />} />
