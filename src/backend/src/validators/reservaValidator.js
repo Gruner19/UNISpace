@@ -211,6 +211,91 @@ function validarPayloadRejeicaoReserva(payload) {
   return true;
 }
 
+/**
+ * Valida o payload opcional de cancelamento de reserva (motivo livre).
+ * @param {object} [payload]
+ * @returns {boolean}
+ */
+function validarPayloadCancelamentoReserva(payload) {
+  if (payload === undefined || payload === null) {
+    return true;
+  }
+  if (typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new ErroDominioReserva('PAYLOAD_INVALIDO', 'Corpo da requisição inválido.', 400);
+  }
+  const { motivo } = payload;
+  if (motivo !== undefined && motivo !== null) {
+    if (typeof motivo !== 'string') {
+      throw new ErroDominioReserva(
+        'MOTIVO_INVALIDO',
+        'O campo "motivo" deve ser uma string.',
+        400
+      );
+    }
+    if (motivo.trim().length > 300) {
+      throw new ErroDominioReserva(
+        'MOTIVO_MUITO_LONGO',
+        'O motivo do cancelamento deve ter no máximo 300 caracteres.',
+        400
+      );
+    }
+  }
+  return true;
+}
+
+/**
+ * RN-05 (P0.5): Avalia o prazo de cancelamento de uma reserva em relação à data/hora atual.
+ * - Reserva já iniciada ou passada: bloqueia com 422 (PRAZO_CANCELAMENTO_EXPIRADO).
+ * - Antecedência >= 2h: cancelamento sem penalidade (contabilizaCota = false).
+ * - Antecedência < 2h: cancelamento permitido, porém conta como uso na cota semanal (contabilizaCota = true).
+ *
+ * @param {{ data: string, horarioInicio: string }} reserva
+ * @param {Date|string} [dataHoraReferencia]
+ * @returns {{ dentroDoPrazoSemPenalidade: boolean, contabilizaCota: boolean, horasAntecedencia: number }}
+ */
+function avaliarPrazoCancelamento(reserva, dataHoraReferencia = new Date()) {
+  const agora = dataHoraReferencia instanceof Date
+    ? dataHoraReferencia
+    : new Date(dataHoraReferencia);
+
+  if (Number.isNaN(agora.getTime())) {
+    throw new ErroDominioReserva(
+      'DATA_REFERENCIA_INVALIDA',
+      'Data/hora de referência inválida para validação de prazo.',
+      400
+    );
+  }
+
+  const inicioReservaMs = Date.parse(`${reserva.data}T${reserva.horarioInicio}:00Z`);
+  if (Number.isNaN(inicioReservaMs)) {
+    throw new ErroDominioReserva(
+      'DATA_RESERVA_INVALIDA',
+      'Data ou horário de início da reserva em formato inválido.',
+      400
+    );
+  }
+
+  const diferencaMs = inicioReservaMs - agora.getTime();
+  if (diferencaMs <= 0) {
+    throw new ErroDominioReserva(
+      'PRAZO_CANCELAMENTO_EXPIRADO',
+      'Não é possível cancelar uma reserva que já iniciou ou está no passado (RN-05).',
+      422,
+      { dataReserva: reserva.data, horarioInicio: reserva.horarioInicio }
+    );
+  }
+
+  const horasAntecedencia = diferencaMs / (1000 * 60 * 60);
+  const prazoSemPenalidade = REGRAS_NEGOCIO.PRAZO_CANCELAMENTO_SEM_PENALIDADE_HORAS;
+  const dentroDoPrazoSemPenalidade = horasAntecedencia >= prazoSemPenalidade;
+
+  return {
+    dentroDoPrazoSemPenalidade,
+    contabilizaCota: !dentroDoPrazoSemPenalidade,
+    horasAntecedencia: Number(horasAntecedencia.toFixed(2))
+  };
+}
+
 module.exports = {
   converterHorarioParaMinutos,
   calcularDuracaoMinutos,
@@ -220,5 +305,7 @@ module.exports = {
   validarCapacidadeEspaco,
   validarPayloadCriacaoReserva,
   validarIdReserva,
-  validarPayloadRejeicaoReserva
+  validarPayloadRejeicaoReserva,
+  validarPayloadCancelamentoReserva,
+  avaliarPrazoCancelamento
 };

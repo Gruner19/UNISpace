@@ -49,10 +49,11 @@ function popularUsuarioPorCabecalhosDev(req) {
 /**
  * Cria o servidor HTTP da API do UNISpace com os módulos de reservas e autenticação configurados.
  */
-function criarServidorReserva(dadosSeed = {}) {
+function criarServidorReserva(dadosSeed = {}, opcoesServidor = {}) {
   const repository = new ReservaRepository(dadosSeed);
   const service = new ReservaService(repository);
   const controller = new ReservaController(service);
+  const obterAgora = typeof opcoesServidor.obterAgora === 'function' ? opcoesServidor.obterAgora : null;
 
   const usuarioRepository = new UsuarioRepository(dadosSeed.usuarios || []);
   const authService = new AuthService(usuarioRepository);
@@ -123,6 +124,43 @@ function criarServidorReserva(dadosSeed = {}) {
 
         await controller.criarReserva(req, res);
       });
+      return;
+    }
+
+    // T7.1: DELETE /api/v1/reservas/:reservaId  |  PUT /api/v1/reservas/:reservaId/cancelar
+    const pathname = req.url.split('?')[0];
+    const mCancelamentoDelete =
+      req.method === 'DELETE' && pathname.match(/^\/api\/v1\/reservas\/([^\/]+)$/);
+    const mCancelamentoPut =
+      req.method === 'PUT' && pathname.match(/^\/api\/v1\/reservas\/([^\/]+)\/cancelar$/);
+    const mCancelamento = mCancelamentoDelete || mCancelamentoPut;
+
+    if (mCancelamento) {
+      (async () => {
+        let corpo = {};
+        try {
+          corpo = await lerCorpoJson(req);
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(
+            JSON.stringify({
+              sucesso: false,
+              mensagem: 'Corpo JSON malformado.',
+              erro: { codigo: 'JSON_INVALIDO', mensagem: 'Corpo JSON malformado.' }
+            })
+          );
+          return;
+        }
+        req.body = corpo;
+        req.params = { reservaId: decodeURIComponent(mCancelamento[1]) };
+        if (obterAgora) {
+          req.dataHoraReferencia = obterAgora();
+        }
+
+        identificarUsuarioOpcional(req);
+
+        await controller.cancelarReserva(req, res);
+      })();
       return;
     }
 

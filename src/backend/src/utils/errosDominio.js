@@ -11,6 +11,7 @@ class ErroDominioReserva extends Error {
     super(mensagem);
     this.name = 'ErroDominioReserva';
     this.codigo = codigo;
+    this.mensagem = mensagem;
     this.statusHttp = statusHttp;
     this.detalhes = detalhes;
   }

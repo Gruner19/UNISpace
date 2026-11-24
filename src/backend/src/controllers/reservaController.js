@@ -1,7 +1,11 @@
 'use strict';
 
 const { ErroDominioReserva } = require('../utils/errosDominio');
-const { validarIdReserva, validarPayloadRejeicaoReserva } = require('../validators/reservaValidator');
+const {
+  validarIdReserva,
+  validarPayloadRejeicaoReserva,
+  validarPayloadCancelamentoReserva
+} = require('../validators/reservaValidator');
 
 class ReservaController {
   /**
@@ -12,6 +16,7 @@ class ReservaController {
     this.criarReserva = this.criarReserva.bind(this);
     this.aprovarReserva = this.aprovarReserva.bind(this);
     this.rejeitarReserva = this.rejeitarReserva.bind(this);
+    this.cancelarReserva = this.cancelarReserva.bind(this);
   }
 
   /**
@@ -151,6 +156,68 @@ class ReservaController {
         erro: {
           codigo: 'ERRO_INTERNO_REJEICAO',
           mensagem: 'Ocorreu um erro interno ao rejeitar a reserva. Nenhuma alteração foi persistida.'
+        }
+      });
+    }
+  }
+
+  /**
+   * Handler para DELETE /api/v1/reservas/:reservaId e PUT /api/v1/reservas/:reservaId/cancelar.
+   * T7.1: cancela reserva permitindo apenas ao titular ou administrador (RN-11),
+   * aplicando a política de prazo de 2h (RN-05), liberando o horário e registrando auditoria (RN-13).
+   */
+  async cancelarReserva(req, res) {
+    try {
+      const usuarioAutenticado = req.usuario || {
+        id: req.headers['x-usuario-id'],
+        email: req.headers['x-usuario-email'],
+        perfil: req.headers['x-usuario-perfil'] || 'ESTUDANTE',
+        ip: req.socket?.remoteAddress || '127.0.0.1'
+      };
+
+      validarIdReserva(req.params?.reservaId);
+      validarPayloadCancelamentoReserva(req.body);
+
+      const { reserva, metaCancelamento } = await this.reservaService.cancelarReserva(
+        req.params.reservaId,
+        usuarioAutenticado,
+        req.body?.motivo,
+        {
+          ipSolicitante: usuarioAutenticado.ip,
+          dataHoraReferencia: req.dataHoraReferencia || undefined
+        }
+      );
+
+      const mensagem = metaCancelamento.contabilizaCota
+        ? 'Reserva cancelada com menos de 2h de antecedência. O horário foi liberado, mas as horas continuam contabilizadas na cota semanal (RN-05).'
+        : 'Reserva cancelada com sucesso. O horário foi liberado e as horas foram devolvidas à sua cota semanal.';
+
+      return this._enviarJson(res, 200, {
+        sucesso: true,
+        mensagem,
+        reservaId: reserva.id,
+        dados: reserva,
+        meta: metaCancelamento
+      });
+    } catch (erro) {
+      if (erro instanceof ErroDominioReserva) {
+        return this._enviarJson(res, erro.statusHttp, {
+          sucesso: false,
+          mensagem: erro.mensagem,
+          erro: {
+            codigo: erro.codigo,
+            mensagem: erro.mensagem,
+            detalhes: erro.detalhes
+          }
+        });
+      }
+
+      return this._enviarJson(res, 500, {
+        sucesso: false,
+        mensagem: 'Ocorreu um erro interno ao cancelar a reserva. Nenhuma alteração foi persistida.',
+        erro: {
+          codigo: 'ERRO_INTERNO_CANCELAMENTO',
+          mensagem: 'Ocorreu um erro interno ao cancelar a reserva. Nenhuma alteração foi persistida.'
         }
       });
     }
