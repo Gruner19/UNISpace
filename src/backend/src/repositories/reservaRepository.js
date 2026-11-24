@@ -15,6 +15,7 @@ class ReservaRepository {
     this.reservas = new Map();
     this.bloqueios = [];
     this.auditoria = [];
+    this.notificacoes = []; // fila de notificações disparadas por transações (efeito colateral fire-and-forget)
     this._locksPorEspaco = new Map();
     this._falharNaAuditoriaParaTeste = false;
 
@@ -71,6 +72,15 @@ class ReservaRepository {
       const resultado = await operacaoTransacional({
         buscarEspacoPorId: (id) => this.espacos.get(id) || null,
         buscarUsuarioPorId: (id) => this.usuarios.get(id) || null,
+        // T9.1: consultas de reserva dentro da transação (leitura consistente com o snapshot)
+        buscarReservaPorId: (id) => this.reservas.get(id) || null,
+        atualizarStatusReserva: (id, alteracoes) => {
+          const reserva = this.reservas.get(id);
+          if (!reserva) return null;
+          const atualizada = { ...reserva, ...alteracoes };
+          this.reservas.set(id, atualizada);
+          return { ...atualizada };
+        },
         listarReservasConfirmadasEspacoData: (idEspaco, data) =>
           Array.from(this.reservas.values()).filter(
             (r) => r.espacoId === idEspaco && r.data === data && r.status === 'CONFIRMADA'
@@ -98,9 +108,19 @@ class ReservaRepository {
           const novaReserva = {
             id,
             codigoConfirmacao,
-            ...dadosReserva,
-            status: 'CONFIRMADA',
-            contabilizaCota: true,
+            espacoId: dadosReserva.espacoId,
+            usuarioId: dadosReserva.usuarioId,
+            data: dadosReserva.data,
+            horarioInicio: dadosReserva.horarioInicio,
+            horarioFim: dadosReserva.horarioFim,
+            duracaoMinutos: dadosReserva.duracaoMinutos,
+            numeroParticipantes: dadosReserva.numeroParticipantes,
+            finalidade: dadosReserva.finalidade,
+            ipSolicitante: dadosReserva.ipSolicitante,
+            // T9.1: reserva especial pode nascer com status PENDENTE_APROVACAO;
+            // o default mantém o comportamento atual (CONFIRMADA) da T6.2.
+            status: dadosReserva.status ?? 'CONFIRMADA',
+            contabilizaCota: dadosReserva.contabilizaCota ?? true,
             criadoEm: new Date().toISOString()
           };
           this.reservas.set(id, novaReserva);
@@ -129,6 +149,53 @@ class ReservaRepository {
     } finally {
       liberarLock();
     }
+  }
+
+  /**
+   * Busca uma reserva pelo ID (fora de transação; uso em validações prévias e testes).
+   * @param {string} id
+   * @returns {object|null}
+   */
+  buscarReservaPorId(id) {
+    if (!id) return null;
+    return this.reservas.get(id) || null;
+  }
+
+  /**
+   * Lista reservas com status PENDENTE_APROVACAO (fila do administrador — suporte ao T9.2).
+   * @returns {Array<object>}
+   */
+  listarReservasPendentesAprovacao() {
+    return Array.from(this.reservas.values()).filter(
+      (r) => r.status === 'PENDENTE_APROVACAO'
+    );
+  }
+
+  /**
+   * Registra uma notificação na fila em memória (efeito colateral fire-and-forget;
+   * não entra no rollback de reservas/auditoria).
+   * @param {object} notificacao
+   * @returns {object}
+   */
+  registrarNotificacao(notificacao) {
+    this.notificacoes.push({ ...notificacao });
+    return { ...notificacao };
+  }
+
+  /**
+   * Atualiza o status e campos relacionados de uma reserva existente.
+   * Destinado a ser chamado dentro de `executarEmTransacaoAtomica`; use
+   * `tx.atualizarStatusReserva` para consistência com o snapshot/rollback.
+   * @param {string} id
+   * @param {object} alteracoes - ex.: { status, motivoCancelamento, canceladaEm }
+   * @returns {object|null}
+   */
+  atualizarStatusReserva(id, alteracoes) {
+    const reserva = this.reservas.get(id);
+    if (!reserva) return null;
+    const atualizada = { ...reserva, ...alteracoes };
+    this.reservas.set(id, atualizada);
+    return { ...atualizada };
   }
 }
 

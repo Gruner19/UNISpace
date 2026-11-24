@@ -7,7 +7,44 @@ const { ReservaController } = require('./controllers/reservaController');
 const { UsuarioRepository } = require('./repositories/usuarioRepository');
 const { AuthService } = require('./services/authService');
 const { AuthController } = require('./controllers/authController');
-const { identificarUsuarioOpcional } = require('./middlewares/authMiddleware');
+const { identificarUsuarioOpcional, autorizarPerfil } = require('./middlewares/authMiddleware');
+
+/**
+ * Lê o corpo JSON da requisição (compatível com o servidor HTTP nativo).
+ * @param {object} req
+ * @returns {Promise<object>}
+ */
+function lerCorpoJson(req) {
+  return new Promise((resolve, reject) => {
+    let rawBody = '';
+    req.on('data', (chunk) => {
+      rawBody += chunk;
+    });
+    req.on('end', () => {
+      try {
+        resolve(rawBody ? JSON.parse(rawBody) : {});
+      } catch {
+        reject(new Error('JSON_INVALIDO'));
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
+/**
+ * Preenche req.usuario a partir dos cabeçalhos de desenvolvimento quando não há JWT.
+ * Mantém o mesmo fluxo de fallback usado por criarReserva (x-usuario-id/email/perfil).
+ * @param {object} req
+ */
+function popularUsuarioPorCabecalhosDev(req) {
+  if (req.usuario) return;
+  req.usuario = {
+    id: req.headers['x-usuario-id'],
+    email: req.headers['x-usuario-email'],
+    perfil: req.headers['x-usuario-perfil'] || 'ESTUDANTE',
+    ip: req.socket?.remoteAddress || '127.0.0.1'
+  };
+}
 
 /**
  * Cria o servidor HTTP da API do UNISpace com os módulos de reservas e autenticação configurados.
@@ -86,6 +123,55 @@ function criarServidorReserva(dadosSeed = {}) {
 
         await controller.criarReserva(req, res);
       });
+      return;
+    }
+
+    // T9.1: POST /api/v1/reservas/:reservaId/aprovar  |  POST /api/v1/reservas/:reservaId/rejeitar  (apenas administrador)
+    const mAprovacao = req.url.match(/^\/api\/v1\/reservas\/([^\/]+)\/(aprovar|rejeitar)$/);
+    if (req.method === 'POST' && mAprovacao) {
+      (async () => {
+        let corpo;
+        try {
+          corpo = await lerCorpoJson(req);
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(
+            JSON.stringify({
+              sucesso: false,
+              erro: { codigo: 'JSON_INVALIDO', mensagem: 'Corpo JSON malformado.' }
+            })
+          );
+          return;
+        }
+        req.body = corpo;
+        req.params = { reservaId: mAprovacao[1] };
+
+        identificarUsuarioOpcional(req);
+        popularUsuarioPorCabecalhosDev(req);
+
+        if (!autorizarPerfil('ADMINISTRADOR')(req, res)) return;
+
+        try {
+          if (mAprovacao[2] === 'aprovar') {
+            await controller.aprovarReserva(req, res);
+          } else {
+            await controller.rejeitarReserva(req, res);
+          }
+        } catch (erro) {
+          const corpoErro = JSON.stringify({
+            sucesso: false,
+            erro: {
+              codigo: 'ERRO_INTERNO_SERVIDOR',
+              mensagem: 'Ocorreu um erro interno ao processar a solicitação.'
+            }
+          });
+          res.writeHead(500, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Length': Buffer.byteLength(corpoErro)
+          });
+          res.end(corpoErro);
+        }
+      })();
       return;
     }
 
