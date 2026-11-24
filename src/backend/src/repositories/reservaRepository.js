@@ -98,7 +98,9 @@ class ReservaRepository {
             (r) =>
               r.usuarioId === usuarioId &&
               r.contabilizaCota === true &&
-              (r.status === 'CONFIRMADA' || r.status === 'CONCLUIDA')
+              (r.status === 'CONFIRMADA' ||
+                r.status === 'CONCLUIDA' ||
+                r.status === 'CANCELADA_USUARIO')
           ),
         inserirReserva: (dadosReserva) => {
           const id = dadosReserva.id || crypto.randomUUID();

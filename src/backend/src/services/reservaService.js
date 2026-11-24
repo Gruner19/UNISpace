@@ -8,7 +8,8 @@ const {
   validarEmailInstitucional,
   validarDuracaoReserva,
   validarCapacidadeEspaco,
-  validarPayloadCriacaoReserva
+  validarPayloadCriacaoReserva,
+  avaliarPrazoCancelamento
 } = require('../validators/reservaValidator');
 
 class ReservaService {
@@ -442,6 +443,148 @@ class ReservaService {
         });
 
         return reservaAtualizada;
+      }
+    );
+  }
+
+  /**
+   * T7.1 (HU-05 / RN-05 / RN-11 / RN-13): Cancela uma reserva de forma atômica.
+   * - Somente o titular da reserva ou um ADMINISTRADOR pode cancelar (RN-11).
+   * - Avalia o prazo de cancelamento de 2 horas (RN-05):
+   *   - >= 2h de antecedência: libera horário e devolve horas à cota semanal (contabilizaCota = false).
+   *   - < 2h de antecedência (antes do início): libera horário, mas mantém horas contabilizadas na cota.
+   *   - Reserva já iniciada/passada: bloqueia com 422 (PRAZO_CANCELAMENTO_EXPIRADO).
+   * - Registra auditoria imutável na mesma transação (RN-13) com rollback em caso de falha.
+   *
+   * @param {string} reservaId
+   * @param {object} contextoUsuario - { id, email, perfil, ip? }
+   * @param {string} [motivo]
+   * @param {object} [opcoes] - { dataHoraReferencia?: Date|string, ipSolicitante?: string }
+   * @returns {Promise<{ reserva: object, metaCancelamento: object }>}
+   */
+  async cancelarReserva(reservaId, contextoUsuario, motivo, opcoes = {}) {
+    if (!contextoUsuario || !contextoUsuario.id) {
+      throw new ErroDominioReserva(
+        'USUARIO_NAO_AUTENTICADO',
+        'É necessário estar autenticado no sistema para cancelar uma reserva.',
+        401
+      );
+    }
+
+    const reservaPrevia = this.reservaRepository.buscarReservaPorId(reservaId);
+    if (!reservaPrevia) {
+      throw new ErroDominioReserva(
+        'RESERVA_NAO_ENCONTRADA',
+        'A reserva informada não foi encontrada.',
+        404
+      );
+    }
+
+    const ipSolicitante = opcoes.ipSolicitante || contextoUsuario.ip || '127.0.0.1';
+    const dataHoraReferencia = opcoes.dataHoraReferencia || new Date();
+
+    return this.reservaRepository.executarEmTransacaoAtomica(
+      reservaPrevia.espacoId,
+      async (tx) => {
+        const reserva = tx.buscarReservaPorId(reservaId);
+        if (!reserva) {
+          throw new ErroDominioReserva(
+            'RESERVA_NAO_ENCONTRADA',
+            'A reserva informada não foi encontrada.',
+            404
+          );
+        }
+
+        // RN-11: Só o dono da reserva ou o administrador pode cancelá-la
+        const ehDono = reserva.usuarioId === contextoUsuario.id;
+        const ehAdmin = contextoUsuario.perfil === 'ADMINISTRADOR';
+        if (!ehDono && !ehAdmin) {
+          throw new ErroDominioReserva(
+            'PERMISSAO_CANCELAMENTO_NEGADA',
+            'Somente o titular da reserva ou um administrador pode cancelá-la (RN-11).',
+            403
+          );
+        }
+
+        // Apenas reservas ativas (CONFIRMADA ou PENDENTE_APROVACAO) podem ser canceladas
+        const statusCancelaveis = ['CONFIRMADA', 'PENDENTE_APROVACAO'];
+        if (!statusCancelaveis.includes(reserva.status)) {
+          throw new ErroDominioReserva(
+            'RESERVA_NAO_CANCELAVEL',
+            `A reserva já está com status "${reserva.status}" e não pode ser cancelada novamente.`,
+            409,
+            { statusAtual: reserva.status }
+          );
+        }
+
+        // RN-05: Validação do prazo de cancelamento (2 horas de antecedência)
+        const avaliacaoPrazo = avaliarPrazoCancelamento(reserva, dataHoraReferencia);
+
+        const canceladoPorAdminTerceiro = ehAdmin && !ehDono;
+        const statusNovo = canceladoPorAdminTerceiro ? 'CANCELADA_ADMIN' : 'CANCELADA_USUARIO';
+        const contabilizaCota =
+          canceladoPorAdminTerceiro || reserva.status === 'PENDENTE_APROVACAO'
+            ? false
+            : avaliacaoPrazo.contabilizaCota;
+
+        const canceladaEm = new Date().toISOString();
+        const motivoNormalizado =
+          typeof motivo === 'string' && motivo.trim().length > 0
+            ? motivo.trim()
+            : canceladoPorAdminTerceiro
+              ? 'Cancelada pelo administrador'
+              : 'Cancelada pelo usuário';
+
+        const reservaAtualizada = tx.atualizarStatusReserva(reservaId, {
+          status: statusNovo,
+          contabilizaCota,
+          canceladaEm,
+          motivoCancelamento: motivoNormalizado
+        });
+
+        // RN-13: Registro de auditoria obrigatório na mesma transação atômica
+        tx.inserirAuditoria({
+          reservaId: reserva.id,
+          usuarioId: contextoUsuario.id,
+          acao: 'CANCELAMENTO_RESERVA',
+          statusAnterior: reserva.status,
+          statusNovo,
+          ipSolicitante,
+          detalhes: {
+            espacoId: reserva.espacoId,
+            data: reserva.data,
+            horarioInicio: reserva.horarioInicio,
+            horarioFim: reserva.horarioFim,
+            codigoConfirmacao: reserva.codigoConfirmacao,
+            motivoCancelamento: motivoNormalizado,
+            contabilizaCota,
+            dentroDoPrazoSemPenalidade: avaliacaoPrazo.dentroDoPrazoSemPenalidade,
+            horasAntecedencia: avaliacaoPrazo.horasAntecedencia,
+            canceladoPorPerfil: contextoUsuario.perfil || 'ESTUDANTE'
+          }
+        });
+
+        // Se o administrador cancelou a reserva de outro usuário, registra notificação
+        if (canceladoPorAdminTerceiro) {
+          this.reservaRepository.registrarNotificacao({
+            usuarioId: reserva.usuarioId,
+            reservaId: reserva.id,
+            tipo: 'RESERVA_CANCELADA_ADMIN',
+            assunto: 'Sua reserva foi cancelada pela administração',
+            corpo: `Sua reserva do espaço ${reserva.espacoId} em ${reserva.data} das ${reserva.horarioInicio} às ${reserva.horarioFim} foi cancelada pela administração. Motivo: ${motivoNormalizado}`,
+            ipSolicitante
+          });
+        }
+
+        return {
+          reserva: reservaAtualizada,
+          metaCancelamento: {
+            horarioLiberado: true,
+            dentroDoPrazoSemPenalidade: avaliacaoPrazo.dentroDoPrazoSemPenalidade,
+            contabilizaCota,
+            horasAntecedencia: avaliacaoPrazo.horasAntecedencia
+          }
+        };
       }
     );
   }
