@@ -19,6 +19,10 @@ const REGRAS_NEGOCIO = Object.freeze({
   ANTECEDENCIA_MAXIMA_DIAS: 14,
   COTA_CURSO_ESPACO_PERCENTUAL_MAX: 40.0,
 
+  // RN-04: Prioridade rotativa semanal entre cursos/faculdades (P0.5 / P2.2)
+  JANELA_EXCLUSIVA_PRIORIDADE_HORAS: 24,
+  HORARIO_NOBRE_PADRAO: Object.freeze({ inicio: '18:00', fim: '22:00' }),
+
   // RN-05: Cancelamento e penalidades
   PRAZO_CANCELAMENTO_SEM_PENALIDADE_HORAS: 2,
   LIMITE_NO_SHOWS_30_DIAS: 3,

@@ -7,6 +7,9 @@ const { ReservaController } = require('./controllers/reservaController');
 const { UsuarioRepository } = require('./repositories/usuarioRepository');
 const { AuthService } = require('./services/authService');
 const { AuthController } = require('./controllers/authController');
+const { PrioridadeRepository } = require('./repositories/prioridadeRepository');
+const { PrioridadeService } = require('./services/prioridadeService');
+const { PrioridadeController } = require('./controllers/prioridadeController');
 const { identificarUsuarioOpcional, autorizarPerfil } = require('./middlewares/authMiddleware');
 
 /**
@@ -49,14 +52,22 @@ function popularUsuarioPorCabecalhosDev(req) {
 /**
  * Cria o servidor HTTP da API do UNISpace com os módulos de reservas e autenticação configurados.
  */
-function criarServidorReserva(dadosSeed = {}) {
+function criarServidorReserva(dadosSeed = {}, opcoesServidor = {}) {
   const repository = new ReservaRepository(dadosSeed);
-  const service = new ReservaService(repository);
+  const prioridadeRepository = new PrioridadeRepository({
+    cursos: dadosSeed.cursos || [],
+    prioridadesRotativas: dadosSeed.prioridadesRotativas || []
+  });
+  const prioridadeService = new PrioridadeService(prioridadeRepository, repository);
+  const prioridadeController = new PrioridadeController(prioridadeService);
+
+  const service = new ReservaService(repository, prioridadeService);
   const controller = new ReservaController(service);
 
   const usuarioRepository = new UsuarioRepository(dadosSeed.usuarios || []);
   const authService = new AuthService(usuarioRepository);
   const authController = new AuthController(authService);
+  const obterAgora = typeof opcoesServidor.obterAgora === 'function' ? opcoesServidor.obterAgora : null;
 
   const server = http.createServer((req, res) => {
     // Healthcheck
@@ -120,9 +131,57 @@ function criarServidorReserva(dadosSeed = {}) {
 
         // Tenta identificar o usuário via token JWT no cabeçalho Authorization
         identificarUsuarioOpcional(req);
+        if (obterAgora) {
+          req.body = { ...req.body, dataHoraReferencia: obterAgora() };
+        }
 
         await controller.criarReserva(req, res);
       });
+      return;
+    }
+
+    // P2.2: GET /api/v1/prioridades/atual?espacoId=...&semana=YYYY-MM-DD
+    const urlObj = new URL(req.url, 'http://localhost');
+    if (req.method === 'GET' && urlObj.pathname === '/api/v1/prioridades/atual') {
+      req.query = {
+        espacoId: urlObj.searchParams.get('espacoId') || undefined,
+        semana: urlObj.searchParams.get('semana') || undefined
+      };
+      if (obterAgora) {
+        req.dataHoraReferencia = obterAgora();
+      }
+      prioridadeController.consultarPrioridadeAtual(req, res);
+      return;
+    }
+
+    // P2.2: POST /api/v1/prioridades/calcular (apenas administrador)
+    if (req.method === 'POST' && urlObj.pathname === '/api/v1/prioridades/calcular') {
+      (async () => {
+        let corpo;
+        try {
+          corpo = await lerCorpoJson(req);
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(
+            JSON.stringify({
+              sucesso: false,
+              mensagem: 'Corpo JSON malformado.',
+              erro: { codigo: 'JSON_INVALIDO', mensagem: 'Corpo JSON malformado.' }
+            })
+          );
+          return;
+        }
+        req.body = corpo;
+        if (obterAgora) {
+          req.dataHoraReferencia = obterAgora();
+        }
+        identificarUsuarioOpcional(req);
+        popularUsuarioPorCabecalhosDev(req);
+
+        if (!autorizarPerfil('ADMINISTRADOR')(req, res)) return;
+
+        await prioridadeController.calcularPrioridadeSemanal(req, res);
+      })();
       return;
     }
 
@@ -186,7 +245,10 @@ function criarServidorReserva(dadosSeed = {}) {
     controller,
     usuarioRepository,
     authService,
-    authController
+    authController,
+    prioridadeRepository,
+    prioridadeService,
+    prioridadeController
   };
 }
 

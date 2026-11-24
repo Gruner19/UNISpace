@@ -8,6 +8,26 @@ const { gerarHashSenha } = require('../utils/senhaUtil');
  * sem depender do PostgreSQL (migrações em src/database).
  */
 const SEED_PADRAO = {
+  cursos: [
+    {
+      id: 'curso-bcc',
+      codigo: 'BCC',
+      nome: 'Ciência da Computação',
+      faculdade: 'ICEB'
+    },
+    {
+      id: 'curso-ec',
+      codigo: 'ENG-COMP',
+      nome: 'Engenharia de Computação',
+      faculdade: 'ICEA'
+    },
+    {
+      id: 'curso-si',
+      codigo: 'SI',
+      nome: 'Sistemas de Informação',
+      faculdade: 'ICEA'
+    }
+  ],
   espacos: [
     {
       id: 'espaco-lab-01',
@@ -20,6 +40,8 @@ const SEED_PADRAO = {
       duracaoMinimaMinutos: 30,
       duracaoMaximaMinutos: 180,
       blocoMinutos: 30,
+      horarioNobreInicio: '18:00',
+      horarioNobreFim: '22:00',
       ativo: true
     },
     {
@@ -69,6 +91,7 @@ const SEED_PADRAO = {
       emailInstitucional: 'demo@aluno.ufop.edu.br',
       senhaHash: gerarHashSenha('SenhaSegura123!'),
       perfil: 'ESTUDANTE',
+      cursoId: 'curso-bcc',
       ativo: true
     },
     {

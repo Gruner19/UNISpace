@@ -14,9 +14,11 @@ const {
 class ReservaService {
   /**
    * @param {import('../repositories/reservaRepository').ReservaRepository} reservaRepository
+   * @param {import('./prioridadeService').PrioridadeService} [prioridadeService]
    */
-  constructor(reservaRepository) {
+  constructor(reservaRepository, prioridadeService = null) {
     this.reservaRepository = reservaRepository;
+    this.prioridadeService = prioridadeService;
   }
 
   /**
@@ -145,10 +147,27 @@ class ReservaService {
         );
       }
 
+      // 3.6b. P2.2 / RN-04: Valida janela exclusiva de prioridade rotativa em horário nobre
+      if (this.prioridadeService) {
+        this.prioridadeService.validarAcessoPrioritario({
+          espaco,
+          data,
+          horarioInicio,
+          horarioFim,
+          contextoUsuario,
+          agora: payload.dataHoraReferencia || contextoUsuario.dataHoraReferencia || new Date()
+        });
+      }
+
       // 3.7. Persiste a reserva confirmada
+      const usuarioPersistido = tx.buscarUsuarioPorId(contextoUsuario.id);
+      const cursoIdReserva =
+        payload.cursoId || contextoUsuario.cursoId || usuarioPersistido?.cursoId || null;
+
       const reservaCriada = tx.inserirReserva({
         espacoId,
         usuarioId: contextoUsuario.id,
+        cursoId: cursoIdReserva,
         data,
         horarioInicio,
         horarioFim,

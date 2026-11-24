@@ -110,6 +110,7 @@ class ReservaRepository {
             codigoConfirmacao,
             espacoId: dadosReserva.espacoId,
             usuarioId: dadosReserva.usuarioId,
+            cursoId: dadosReserva.cursoId ?? null,
             data: dadosReserva.data,
             horarioInicio: dadosReserva.horarioInicio,
             horarioFim: dadosReserva.horarioFim,
