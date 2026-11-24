@@ -7,6 +7,9 @@
  */
 function registrarRotasReserva(router, reservaController) {
   router.post('/api/v1/reservas', reservaController.criarReserva);
+  // T9.1: aprovação e rejeição de reservas especiais (apenas administrador)
+  router.post('/api/v1/reservas/:reservaId/aprovar', reservaController.aprovarReserva);
+  router.post('/api/v1/reservas/:reservaId/rejeitar', reservaController.rejeitarReserva);
   return router;
 }
 

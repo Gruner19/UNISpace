@@ -172,6 +172,45 @@ function validarPayloadCriacaoReserva(payload) {
   return true;
 }
 
+/**
+ * Valida o ID de uma reserva (não vazio).
+ * @param {string} id
+ * @returns {boolean}
+ */
+function validarIdReserva(id) {
+  if (!id || typeof id !== 'string' || id.trim().length === 0) {
+    throw new ErroDominioReserva(
+      'RESERVA_ID_OBRIGATORIO',
+      'O ID da reserva é obrigatório.',
+      400
+    );
+  }
+  return true;
+}
+
+/**
+ * Valida o payload opcional de rejeição de reserva (motivo livre).
+ * @param {object} [payload]
+ * @returns {boolean}
+ */
+function validarPayloadRejeicaoReserva(payload) {
+  if (payload === undefined || payload === null) {
+    return true;
+  }
+  if (typeof payload !== 'object') {
+    throw new ErroDominioReserva('PAYLOAD_INVALIDO', 'Corpo da requisição inválido.', 400);
+  }
+  const { motivo } = payload;
+  if (motivo !== undefined && motivo !== null && typeof motivo !== 'string') {
+    throw new ErroDominioReserva(
+      'MOTIVO_INVALIDO',
+      'O campo "motivo" deve ser uma string.',
+      400
+    );
+  }
+  return true;
+}
+
 module.exports = {
   converterHorarioParaMinutos,
   calcularDuracaoMinutos,
@@ -179,5 +218,7 @@ module.exports = {
   validarEmailInstitucional,
   validarDuracaoReserva,
   validarCapacidadeEspaco,
-  validarPayloadCriacaoReserva
+  validarPayloadCriacaoReserva,
+  validarIdReserva,
+  validarPayloadRejeicaoReserva
 };

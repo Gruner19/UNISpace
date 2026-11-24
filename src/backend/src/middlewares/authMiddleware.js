@@ -76,7 +76,36 @@ function _enviarRespostaErro(res, status, payload) {
   res.end(corpo);
 }
 
+/**
+ * Middleware de controle de acesso por perfil.
+ * Retorna 403 quando o usuário autenticado não possui nenhum dos perfis exigidos.
+ * @param {...string} perfisPermitidos - ex.: 'ADMINISTRADOR', 'DOCENTE'
+ * @returns {Function} Middleware Express-compatível (req, res, next) ou handler direto (req, res).
+ */
+function autorizarPerfil(...perfisPermitidos) {
+  return function (req, res, next) {
+    const perfil = req.usuario && req.usuario.perfil ? req.usuario.perfil : null;
+
+    if (!perfil || !perfisPermitidos.includes(perfil)) {
+      _enviarRespostaErro(res, 403, {
+        sucesso: false,
+        erro: {
+          codigo: 'PERFIL_NAO_AUTORIZADO',
+          mensagem: `Acesso restrito a perfis: ${perfisPermitidos.join(', ')}.`
+        }
+      });
+      return false;
+    }
+
+    if (typeof next === 'function') {
+      next();
+    }
+    return true;
+  };
+}
+
 module.exports = {
   autenticarToken,
-  identificarUsuarioOpcional
+  identificarUsuarioOpcional,
+  autorizarPerfil
 };
